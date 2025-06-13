@@ -1,0 +1,7 @@
+pyshark
+scapy
+pandas
+matplotlib
+openai
+python-dotenv
+rich
