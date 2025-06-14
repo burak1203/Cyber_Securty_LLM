@@ -113,6 +113,10 @@ Analiz sonuçları web arayüzünde görüntülenir. Ayrıca:
    - HuggingFace API Token'ınızın doğru ayarlandığından emin olun
    - İnternet bağlantınızı kontrol edin
 
+## Uygulama İçi Resimler
+   - Ana arayüz
+![image](https://github.com/user-attachments/assets/fab34b59-4739-4c46-bdac-5be4a3210ae7)
+
 ## Katkıda Bulunma
 
 1. Bu depoyu fork edin
