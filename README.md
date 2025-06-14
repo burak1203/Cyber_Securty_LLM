@@ -4,12 +4,14 @@ Bu uygulama, ağ trafiğini gerçek zamanlı olarak izleyen, analiz eden ve pota
 
 ## Özellikler
 
-- 🔍 Gerçek zamanlı ağ trafiği izleme
+- 📡 Gerçek zamanlı ağ trafiği izleme
 - 🛡️ Otomatik tehdit tespiti
 - 🤖 LLM destekli tehdit analizi
 - 📊 Detaylı log kayıtları
 - 🚨 DDoS, Keylogger ve şüpheli port kullanımı tespiti
 - 🌐 IP adresi analizi ve güvenilirlik kontrolü
+- 🌟 Modern ve estetik bir web arayüzü
+- 📥 Log dosyalarını indirme özelliği
 
 ## Gereksinimler
 
@@ -53,7 +55,7 @@ ip link show
 ### 2. Uygulamayı Çalıştırma
 
 ```bash
-python main.py
+python app.py
 ```
 
 Varsayılan olarak uygulama "Wi-Fi 2" arayüzünü kullanır. Farklı bir arayüz kullanmak için `src/capture.py` dosyasındaki `interface` parametresini değiştirin.
@@ -61,19 +63,14 @@ Varsayılan olarak uygulama "Wi-Fi 2" arayüzünü kullanır. Farklı bir arayü
 ### 3. Trafik Yakalama
 
 - Uygulama başladığında trafik yakalamaya başlar
-- İstediğiniz zaman Ctrl+C tuşlarına basarak yakalamayı durdurabilirsiniz
+- İstediğiniz zaman "Analizi Durdur" butonuna basarak yakalamayı durdurabilirsiniz
 - Yakalama durduğunda, toplanan veriler otomatik olarak analiz edilir
 
 ### 4. Sonuçları İnceleme
 
-Analiz sonuçları `network_analysis.log` dosyasında saklanır. Bu dosyada:
-
-- Yakalanan paketlerin özeti
-- Tespit edilen tehditler
-- LLM tarafından yapılan analizler
-- Öneriler ve uyarılar
-
-bulunur.
+Analiz sonuçları web arayüzünde görüntülenir. Ayrıca:
+- Canlı loglar ve LLM logları panelde gösterilir
+- Log dosyalarını indirme özelliği mevcuttur
 
 ## Tespit Edilen Tehdit Türleri
 
@@ -126,4 +123,4 @@ bulunur.
 
 ## Lisans
 
-Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için `LICENSE` dosyasına bakın. 
+Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için `LICENSE` dosyasına bakın.

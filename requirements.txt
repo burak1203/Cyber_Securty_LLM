@@ -5,3 +5,7 @@ matplotlib
 openai
 python-dotenv
 rich
+flask
+huggingface_hub
+requests
+beautifulsoup4

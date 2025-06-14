@@ -23,6 +23,11 @@ def is_keylogger_behavior(pkt, packet_stats):
         print(f"[DEBUG] İçerik: {content[:200]}...")
         print(f"[DEBUG] ASCII: {content_ascii[:200]}...")
         
+        # 1) HTTP header'larında Host: localhost:8000 ve User-Agent: python-requests varsa keylogger olarak işaretle
+        if ("Host: localhost:8000" in content or "Host: localhost:8000" in content_ascii) and ("User-Agent: python-requests" in content or "User-Agent: python-requests" in content_ascii):
+            print("[DEBUG] Host: localhost:8000 ve User-Agent: python-requests tespit edildi! (Keylogger)")
+            return True, "Host: localhost:8000 ve User-Agent: python-requests tespit edildi (Keylogger)"
+        
         for check_content in [content, content_ascii]:
             if not check_content:
                 continue
@@ -85,7 +90,7 @@ def is_keylogger_behavior(pkt, packet_stats):
         print(f"[DEBUG] Keylogger analizi sırasında hata: {str(e)}")
         return False, ""
 
-def detect_threats(packets):
+def detect_threats(packets, stop_flag=None):
     threats = set()
     packet_stats = {
         'total_packets': len(packets),
@@ -96,82 +101,70 @@ def detect_threats(packets):
         'small_packets': 0,
         'small_packets_per_src': defaultdict(int)
     }
-
     ALLOWED_PROTOCOLS = [
         "TCP", "UDP", "HTTP", "HTTPS", "DNS", "ICMP", "TLS", "SSL", "ARP", "DHCP",
         "SSDP", "MDNS", "NTP", "SNMP", "SMTP", "POP3", "IMAP", "FTP", "SSH",
         "TELNET", "RDP", "SMB", "NBNS", "LLMNR", "DATA", "JSON", "QUIC"
     ]
-
     DDOS_THRESHOLDS = {
         'packets_per_second': 1000,
         'packets_per_source': 500,
         'total_packets': 1000,
         'large_packets': 500
     }
-
     for pkt in packets:
+        if stop_flag is not None and stop_flag():
+            print("⏹️ Tehdit analizi kullanıcı tarafından durduruldu.")
+            break
         try:
             protocol = pkt.get("protocol", "") if isinstance(pkt, dict) else getattr(pkt, "protocol", "")
             src = pkt.get("src", "") if isinstance(pkt, dict) else getattr(pkt, "src", "")
             dst = pkt.get("dst", "") if isinstance(pkt, dict) else getattr(pkt, "dst", "")
             length = int(pkt.get("length", 0)) if isinstance(pkt, dict) else int(getattr(pkt, "length", 0))
-
+            # DATA-TEXT-LINES protokolüyle ilgili hiçbir işlem yapılmasın
+            if protocol == "DATA-TEXT-LINES":
+                continue
             packet_stats['protocols'][protocol] = packet_stats['protocols'].get(protocol, 0) + 1
             packet_stats['sources'][src] = packet_stats['sources'].get(src, 0) + 1
             packet_stats['destinations'][dst] = packet_stats['destinations'].get(dst, 0) + 1
-
             if length > 1000:
                 packet_stats['large_packets'] += 1
             elif length < 100:
                 packet_stats['small_packets'] += 1
                 packet_stats['small_packets_per_src'][src] += 1
-
             is_keylogger, reason = is_keylogger_behavior(pkt, packet_stats)
             if is_keylogger:
                 msg = f"Keylogger aktivitesi tespit edildi ({reason}) - {summarize_packet(pkt)}"
                 threats.add(msg)
                 write_to_log(f"[Keylogger Tespiti] {msg}")
-
             if protocol in ["UDP", "DATA"]:
                 if packet_stats['sources'].get(src, 0) > DDOS_THRESHOLDS['packets_per_source']:
                     msg = f"DDoS benzeri UDP/DATA trafiği tespit edildi - {src} adresinden {packet_stats['sources'][src]} paket"
                     threats.add(msg)
                     write_to_log(f"[DDoS Tespiti] {msg}")
-
             elif protocol == "TCP":
                 if "SYN" in str(pkt) and packet_stats['sources'].get(src, 0) > DDOS_THRESHOLDS['packets_per_source']:
                     msg = f"DDoS benzeri TCP SYN trafiği tespit edildi - {src} adresinden {packet_stats['sources'][src]} paket"
                     threats.add(msg)
                     write_to_log(f"[DDoS Tespiti] {msg}")
-
             is_suspicious, port_info = is_suspicious_port(pkt)
             if is_suspicious:
                 msg = f"Şüpheli port kullanımı ({port_info}) - {summarize_packet(pkt)}"
                 threats.add(msg)
                 write_to_log(f"[Port Tespiti] {msg}")
-
-            if protocol not in ALLOWED_PROTOCOLS:
-                msg = f"Bilinmeyen protokol tespit edildi: {protocol} - {summarize_packet(pkt)}"
-                threats.add(msg)
-                write_to_log(f"[Protokol Tespiti] {msg}")
-
         except Exception as e:
             error_msg = f"[DEBUG] Paket analizi sırasında hata: {str(e)}"
             print(error_msg)
             write_to_log(error_msg)
-
     if packet_stats['total_packets'] > DDOS_THRESHOLDS['total_packets']:
         msg = f"Yüksek trafik hacmi tespit edildi - Toplam {packet_stats['total_packets']} paket"
         threats.add(msg)
         write_to_log(f"[DDoS Tespiti] {msg}")
-
     for src, count in packet_stats['sources'].items():
         if count > DDOS_THRESHOLDS['packets_per_source']:
             msg = f"Tek kaynaktan yoğun trafik - {src} adresinden {count} paket"
             threats.add(msg)
             write_to_log(f"[DDoS Tespiti] {msg}")
-
     debug_stats = f"""
 [DEBUG] Paket İstatistikleri:
 Toplam Paket: {packet_stats['total_packets']}
